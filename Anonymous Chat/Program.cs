@@ -2,65 +2,94 @@
 using Telegram.Bot.Types;
 
 Dictionary<long, string> IDs = new Dictionary<long, string>();
-IDs[940765457] = "Danil";
-IDs[2015829977] = "Валентина";
-
-List<long> usedIDs = new List<long>();
+long lastId;
 
 Random random = new Random();
 long companionId = 0;
 
 Dictionary<long, bool> companionIsChanged = new Dictionary<long, bool>();
-companionIsChanged[940765457] = false;
-companionIsChanged[2015829977] = false;
 
-var client = new TelegramBotClient();
+
+var client = new TelegramBotClient("5505267533:AAFSPmp71MjJZLKR4YXyvxxlBc_OCZ3V4EQ");
 
 client.StartReceiving(Update, Error);
 Console.ReadKey();
 
 async static Task Error(ITelegramBotClient arg1, Exception arg2, CancellationToken arg3)
 {
-    throw new NotImplementedException();
+    throw new ArgumentException("Error");
 }
 
 async Task Update(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
 {
     var message = update.Message;
-    if (!companionIsChanged[message.Chat.Id])
+    if (message != null)
     {
-        companionId = message.Chat.Id;
-    }
+        companionIsChanged[message.Chat.Id] = false;
+        foreach (var key in IDs.Keys)
+        {
+            if (key == message.Chat.Id)
+            {
+                companionIsChanged[message.Chat.Id] = true;
+            }
+        }
+        IDs[message.Chat.Id] = message.Chat.FirstName;
 
-    if (message.Text != null)
-    {
-        if (message.Text == "change companion")
+        if (!companionIsChanged[message.Chat.Id])
         {
-            usedIDs.Add(companionId);
-            ChangeCompanion(message.Chat.Id);
-            await botClient.SendTextMessageAsync(message.Chat.Id, "Companion changed!" + " Now you are talking to " + IDs[companionId]);
-            companionIsChanged[message.Chat.Id] = true;
+            companionId = message.Chat.Id;
         }
-        else if (message.Text == "who is my companion")
-        {
-            await botClient.SendTextMessageAsync(message.Chat.Id, "Now you are talking to " + IDs[companionId]);
-        }
-        else
-        {
-            await botClient.SendTextMessageAsync(companionId, message.Text);
-        }
-        Console.WriteLine(IDs[message.Chat.Id] + " " + message.Text + " " + IDs[companionId]);
-    }
 
-    if (message.Sticker != null)
-    {
-        await botClient.SendStickerAsync(companionId, message.Sticker.FileId);
+        if (message.Text != null)
+        {
+            if (message.Text.ToLower().Contains("change companion"))
+            {
+                lastId = companionId;
+                if (ChangeCompanion(message.Chat.Id))
+                {
+                    await botClient.SendTextMessageAsync(message.Chat.Id, "Companion changed!" + " Now you are talking to " + IDs[companionId]);
+                }
+                else
+                {
+                    await botClient.SendTextMessageAsync(message.Chat.Id, "Not enough companions");
+                }
+                companionIsChanged[message.Chat.Id] = true;
+            }
+            else if (message.Text.ToLower().Contains("who is my companion"))
+            {
+                await botClient.SendTextMessageAsync(message.Chat.Id, "Now you are talking to " + IDs[companionId]);
+            }
+            else if (message.Text.ToLower().Contains("list of companions"))
+            {
+                foreach (var name in IDs.Values)
+                {
+                    await botClient.SendTextMessageAsync(message.Chat.Id, name);
+                }
+            }
+            else
+            {
+                await botClient.SendTextMessageAsync(companionId, message.Text);
+            }
+            Console.WriteLine(IDs[message.Chat.Id] + " " + message.Text + " " + IDs[companionId]);
+        }
+
+        if (message.Sticker != null)
+        {
+            await botClient.SendStickerAsync(companionId, message.Sticker.FileId);
+        }
     }
 }
-void ChangeCompanion(long id)
+bool ChangeCompanion(long id)
 {
-    while (companionId == usedIDs[usedIDs.Count - 1])
+    while (companionId == lastId)
     {
-        companionId = IDs.Keys.ToList()[random.Next(0, IDs.Count)];
+        if (IDs.Count > 1)
+        {
+            companionId = IDs.Keys.ToList()[random.Next(0, IDs.Count)];
+            return true;
+        }
+        else
+            break;
     }
+    return false;
 }
