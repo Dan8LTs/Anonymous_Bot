@@ -1,21 +1,18 @@
 ﻿using Telegram.Bot;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.InputFiles;
 using Telegram.Bot.Types.ReplyMarkups;
 
 Dictionary<long, string> IDs = new Dictionary<long, string>();
 Dictionary<long, long> companions = new Dictionary<long, long>();
-List<InputOnlineFile> onlineFiles;
 
 long lastId;
 const string change = "Change companion";
 const string list = "List of companions";
 Random random = new Random();
 
-var client = new TelegramBotClient("5505267533:AAFSPmp71MjJZLKR4YXyvxxlBc_OCZ3V4EQ");
+var client = new TelegramBotClient(/*token*/);
 client.StartReceiving(Update, Error);
 Console.ReadKey();
-
 
 async Task Update(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
 {
@@ -65,13 +62,6 @@ async Task Update(ITelegramBotClient botClient, Update update, CancellationToken
         if (message.Sticker != null)
         {
             await botClient.SendStickerAsync(companions[message.Chat.Id], message.Sticker.FileId);
-        }
-
-        if (message.Photo != null)
-        {
-            await using var stream = File.Opdfte("C:/Users/Данил/Desktop");
-            stream.Write(message.Audio);
-            await botClient.SendAudioAsync()
         }
     }
 }
